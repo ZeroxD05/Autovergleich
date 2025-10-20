@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Autovergleich</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      html {
+        scroll-behavior: smooth;
+      }
+
+      .loading {
+        display: none;
+        text-align: center;
+        margin-top: 20px;
+      }
+
+      .loading-spinner {
+        border: 4px solid #e5e7eb;
+        border-top: 4px solid #2563eb;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+        display: inline-block;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* Back to top button */
+      #backToTop {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        background-color: #2563eb;
+        color: white;
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+        cursor: pointer;
+        opacity: 0;
+        transform: translateY(20px);
+        transition: opacity 0.3s ease, transform 0.3s ease;
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+      }
+
+      #backToTop.show {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      #backToTop:hover {
+        background-color: #1d4ed8;
+      }
+    </style>
+  </head>
+
+  <body class="bg-gradient-to-br from-gray-50 to-gray-200 min-h-screen">
+    <!-- Fixed Glass Header -->
+    <header
+      class="fixed top-0 left-0 w-full backdrop-blur-md bg-white/60 border-b border-gray-200 z-50 shadow-sm"
+    >
+      <div class="max-w-5xl mx-auto flex justify-center items-center py-4 px-6">
+        <h1 class="text-3xl font-extrabold text-gray-800 select-none">
+          🚗 Autovergleich
+        </h1>
+      </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-5xl mx-auto p-6 mt-24">
+      {% if error %}
+      <div
+        class="bg-red-100 text-red-700 border border-red-300 p-3 rounded-lg text-center mb-6"
+      >
+        {{ error }}
+      </div>
+      {% endif %}
+
+      <form
+        id="searchForm"
+        method="POST"
+        class="bg-white/90 backdrop-blur p-8 rounded-2xl shadow-lg border border-gray-200 transition hover:shadow-xl"
+        onsubmit="showLoading()"
+      >
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label class="block text-sm font-semibold text-gray-700"
+              >Automarke</label
+            >
+            <input
+              type="text"
+              name="make"
+              class="mt-2 w-full border-gray-300 rounded-lg shadow-sm p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              placeholder="z.B. Volkswagen"
+            />
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-gray-700">Ort</label>
+            <input
+              type="text"
+              name="city"
+              class="mt-2 w-full border-gray-300 rounded-lg shadow-sm p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              placeholder="z.B. Berlin"
+            />
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-gray-700"
+              >Min. Kilometerstand</label
+            >
+            <input
+              type="number"
+              name="min_mileage"
+              class="mt-2 w-full border-gray-300 rounded-lg shadow-sm p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              placeholder="0"
+            />
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-gray-700"
+              >Max. Kilometerstand</label
+            >
+            <input
+              type="number"
+              name="max_mileage"
+              class="mt-2 w-full border-gray-300 rounded-lg shadow-sm p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              placeholder="100000"
+            />
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-gray-700"
+              >Min. Erstzulassung</label
+            >
+            <input
+              type="number"
+              name="min_year"
+              class="mt-2 w-full border-gray-300 rounded-lg shadow-sm p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              placeholder="2010"
+            />
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-gray-700"
+              >Max. Erstzulassung</label
+            >
+            <input
+              type="number"
+              name="max_year"
+              class="mt-2 w-full border-gray-300 rounded-lg shadow-sm p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              placeholder="2023"
+            />
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-gray-700"
+              >Getriebe</label
+            >
+            <select
+              name="gearbox"
+              class="mt-2 w-full border-gray-300 rounded-lg shadow-sm p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="">Alle</option>
+              <option value="Schaltgetriebe">Schaltgetriebe</option>
+              <option value="Automatik">Automatik</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-gray-700"
+              >Zustand</label
+            >
+            <select
+              name="damage"
+              class="mt-2 w-full border-gray-300 rounded-lg shadow-sm p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="">Alle</option>
+              <option value="Neu">Neu (Unfallfrei)</option>
+              <option value="Beschädigt">Beschädigt</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-gray-700"
+              >Min. Preis (€)</label
+            >
+            <input
+              type="number"
+              name="min_price"
+              class="mt-2 w-full border-gray-300 rounded-lg shadow-sm p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              placeholder="5000"
+            />
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-gray-700"
+              >Max. Preis (€)</label
+            >
+            <input
+              type="number"
+              name="max_price"
+              class="mt-2 w-full border-gray-300 rounded-lg shadow-sm p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              placeholder="20000"
+            />
+          </div>
+        </div>
+
+        <button
+          type="submit"
+          class="mt-8 w-full bg-blue-600 text-white p-3 rounded-lg font-semibold text-lg shadow hover:bg-blue-700 transition duration-300"
+        >
+          🔍 Suchen
+        </button>
+      </form>
+
+      <div id="loading" class="loading">
+        <div class="loading-spinner mx-auto"></div>
+        <p class="mt-3 text-gray-600">Suche läuft, bitte warten...</p>
+      </div>
+
+      {% if cars %}
+      <h2 class="text-2xl font-bold mt-10 mb-4 text-gray-800">Ergebnisse</h2>
+
+      <div
+        class="overflow-x-auto bg-white/90 backdrop-blur border border-gray-200 rounded-xl shadow-lg"
+      >
+        <table class="min-w-full text-sm text-gray-700">
+          <thead class="bg-gray-100 text-gray-800 uppercase text-xs">
+            <tr>
+              <th class="p-4 text-left">Webseite</th>
+              <th class="p-4 text-left">Titel</th>
+              <th class="p-4 text-left">Aktionen</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for car in cars %}
+            <tr class="border-b hover:bg-gray-50 transition">
+              <td class="p-4 font-medium">{{ car.website }}</td>
+              <td class="p-4">
+                {% if car.url != 'N/A' %}
+                <a
+                  href="{{ car.url }}"
+                  target="_blank"
+                  class="text-blue-600 hover:underline"
+                  >{{ car.title | default('N/A') }}</a
+                >
+                {% else %}
+                <span>{{ car.title | default('N/A') }}</span>
+                {% endif %}
+              </td>
+              <td class="p-4">
+                {% if car.url != 'N/A' %}
+                <a
+                  href="https://api.whatsapp.com/send?text=Schau dir dieses Auto an: {{ car.url | urlencode }}"
+                  target="_blank"
+                  class="bg-green-500 text-white px-3 py-1.5 rounded-md text-sm font-medium hover:bg-green-600 transition"
+                  >Teilen</a
+                >
+                {% else %}
+                <span class="text-gray-400">Nicht teilbar</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% endif %}
+    </main>
+
+    <!-- Back to top button -->
+    <div id="backToTop" title="Nach oben">↑</div>
+
+    <script>
+      function showLoading() {
+        document.getElementById("loading").style.display = "block";
+      }
+
+      // Back to top button behavior
+      const backToTop = document.getElementById("backToTop");
+      window.addEventListener("scroll", () => {
+        if (window.scrollY > 400) {
+          backToTop.classList.add("show");
+        } else {
+          backToTop.classList.remove("show");
+        }
+      });
+
+      backToTop.addEventListener("click", () => {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      });
+    </script>
+  </body>
+</html>
